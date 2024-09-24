@@ -1,0 +1,198 @@
+---
+title: "Capacity Analysis of Homeless Shelters in Toronto"
+subtitle: "A Quantitative Examination of Bed Capacity"
+author: 
+  - Alex Lee
+thanks: ""
+date: September 24, 2024
+date-format: long
+abstract: |
+  This paper explores the relationship between bed capacity and occupancy rates in homeless shelters across Toronto using 2023 data. We apply a linear regression model to evaluate how shelter capacity and the number of service users affect occupancy rates. 
+format: pdf
+number-sections: true
+bibliography: references.bib
+---
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+
+# Load tidyverse for read_csv and other functionality
+library(tidyverse)
+library(here)
+library(broom)
+library(knitr)
+
+```
+
+
+# Introduction
+
+You can and should cross-reference sections and sub-sections. We use @citeR and @rohan.
+
+The remainder of this paper is structured as follows. @sec-data....
+
+
+
+# Data {#sec-data}
+
+Some of our data is of penguins (@fig-bills), from @palmerpenguins.
+
+
+Talk more about it.
+
+And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
+
+```{r}
+# Load the cleaned data
+file_path <- "/Users/alexlee/Desktop/cleaned_shelter_data.csv"
+data <- read_csv(file_path)
+
+# Summary statistics
+summary_stats <- data %>%
+  summarise(
+    avg_users = mean(SERVICE_USER_COUNT, na.rm = TRUE),
+    avg_bed_capacity = mean(CAPACITY_ACTUAL_BED, na.rm = TRUE),
+    avg_occupied_beds = mean(OCCUPIED_BEDS, na.rm = TRUE),
+    avg_occupancy_rate = mean(OCCUPANCY_RATE_BEDS, na.rm = TRUE)
+  )
+
+summary_stats
+```
+```{r}
+#| label: fig-occupancy-distribution
+#| fig-cap: Distribution of Occupancy Rates Across Toronto Shelters
+#| echo: false
+
+# Distribution of Occupancy Rate
+ggplot(data, aes(x = OCCUPANCY_RATE_BEDS)) +
+  geom_histogram(bins = 30, fill = "blue", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Shelter Occupancy Rates",
+       x = "Occupancy Rate (Beds)",
+       y = "Frequency")
+```
+Talk way more about it. 
+
+
+
+# Model
+
+The goal of our modelling strategy is twofold. Firstly,...
+
+Here we briefly describe the Bayesian analysis model used to investigate... Background details and diagnostics are included in [Appendix -@sec-model-details].
+```{r}
+# Scale the predictor variables for the entire dataset
+data <- data %>%
+  mutate(
+    scaled_capacity = scale(CAPACITY_ACTUAL_BED, center = TRUE, scale = TRUE),
+    scaled_service_users = scale(SERVICE_USER_COUNT, center = TRUE, scale = TRUE)
+  )
+
+# Fit the linear model
+model <- lm(OCCUPANCY_RATE_BEDS ~ scaled_capacity + scaled_service_users, data = data)
+
+# Display model summary
+model_summary <- tidy(model, conf.int = TRUE)
+model_summary
+```
+
+## Model set-up
+
+Define $y_i$ as the number of seconds that the plane remained aloft. Then $\beta_i$ is the wing width and $\gamma_i$ is the wing length, both measured in millimeters.  
+
+\begin{align} 
+y_i|\mu_i, \sigma &\sim \mbox{Normal}(\mu_i, \sigma) \\
+\mu_i &= \alpha + \beta_i + \gamma_i\\
+\alpha &\sim \mbox{Normal}(0, 2.5) \\
+\beta &\sim \mbox{Normal}(0, 2.5) \\
+\gamma &\sim \mbox{Normal}(0, 2.5) \\
+\sigma &\sim \mbox{Exponential}(1)
+\end{align}
+
+We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
+
+
+### Model justification
+
+We expect a positive relationship between the size of the wings and time spent aloft. In particular...
+
+We can use maths by including latex between dollar signs, for instance $\theta$.
+
+
+# Results
+
+Our results are summarized in @tbl-modelresults.
+
+```{r}
+modelsummary::modelsummary(
+  model,
+  statistic = "p.value",
+  fmt = 2
+)
+```
+
+
+# Discussion
+
+```{r}
+augmented_data <- augment(model)
+
+# Plot residuals vs fitted values
+ggplot(augmented_data, aes(x = .fitted, y = .resid)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(se = FALSE, color = "red") +
+  theme_minimal() +
+  labs(title = "Residuals vs Fitted Values",
+       x = "Fitted Values",
+       y = "Residuals")
+
+```
+
+## First discussion point {#sec-first-point}
+
+If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
+
+## Second discussion point
+
+## Third discussion point
+
+## Weaknesses and next steps
+
+Weaknesses and next steps should also be included.
+
+\newpage
+
+\appendix
+
+# Appendix {-}
+
+
+# Additional data details
+
+# Model details {#sec-model-details}
+
+## Posterior predictive check
+
+In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows...
+
+In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows... 
+
+
+## Diagnostics
+
+@fig-stanareyouokay-1 is a trace plot. It shows... This suggests...
+
+@fig-stanareyouokay-2 is a Rhat plot. It shows... This suggests...
+
+
+
+
+
+\newpage
+
+
+# References
+
+
