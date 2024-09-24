@@ -10,28 +10,45 @@
 
 #### Workspace setup ####
 library(tidyverse)
-library(rstanarm)
+library(broom)
 
-#### Read data ####
-analysis_data <- read_csv("data/analysis_data/analysis_data.csv")
+# Load the cleaned data
+file_path <- "data/processed_data/cleaned_shelter_data.csv"
+data <- read_csv(file_path)
 
-### Model data ####
-first_model <-
-  stan_glm(
-    formula = flying_time ~ length + width,
-    data = analysis_data,
-    family = gaussian(),
-    prior = normal(location = 0, scale = 2.5, autoscale = TRUE),
-    prior_intercept = normal(location = 0, scale = 2.5, autoscale = TRUE),
-    prior_aux = exponential(rate = 1, autoscale = TRUE),
-    seed = 853
+# Center and scale the predictor variables for better interpretability
+data <- data %>%
+  mutate(
+    scaled_capacity = scale(CAPACITY_ACTUAL_BED, center = TRUE, scale = TRUE),
+    scaled_service_users = scale(SERVICE_USER_COUNT, center = TRUE, scale = TRUE)
   )
 
+# Fit a linear model: Predicting Occupancy Rate based on scaled capacity and service users
+model <- lm(OCCUPANCY_RATE_BEDS ~ scaled_capacity + scaled_service_users, data = data)
 
-#### Save model ####
-saveRDS(
-  first_model,
-  file = "models/first_model.rds"
-)
+# Get a tidy summary of the model, including confidence intervals
+model_summary <- tidy(model, conf.int = TRUE)
 
+# Display model summary with confidence intervals
+print(model_summary)
+
+# Visualize the relationship between capacity and occupancy rate with model fit
+ggplot(data, aes(x = CAPACITY_ACTUAL_BED, y = OCCUPANCY_RATE_BEDS)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "blue") +
+  theme_minimal() +
+  labs(title = "Occupancy Rate vs Bed Capacity",
+       x = "Actual Bed Capacity",
+       y = "Occupancy Rate (Beds)")
+
+# Create necessary directories for models
+if (!dir.exists("models")) {
+  dir.create("models")
+}
+
+# Save the model for future use
+saveRDS(model, "models/improved_occupancy_model.rds")
+
+# Print success message
+print("Model created and saved successfully.")
 

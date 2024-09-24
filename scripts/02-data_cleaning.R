@@ -10,35 +10,33 @@
 #### Workspace setup ####
 library(tidyverse)
 
-#### Clean data ####
-raw_data <- read_csv("inputs/data/plane_data.csv")
+# Create the directories if they don't exist
+if (!dir.exists("data")) {
+  dir.create("data")
+}
 
-cleaned_data <-
-  raw_data |>
-  janitor::clean_names() |>
-  select(wing_width_mm, wing_length_mm, flying_time_sec_first_timer) |>
-  filter(wing_width_mm != "caw") |>
-  mutate(
-    flying_time_sec_first_timer = if_else(flying_time_sec_first_timer == "1,35",
-                                   "1.35",
-                                   flying_time_sec_first_timer)
-  ) |>
-  mutate(wing_width_mm = if_else(wing_width_mm == "490",
-                                 "49",
-                                 wing_width_mm)) |>
-  mutate(wing_width_mm = if_else(wing_width_mm == "6",
-                                 "60",
-                                 wing_width_mm)) |>
-  mutate(
-    wing_width_mm = as.numeric(wing_width_mm),
-    wing_length_mm = as.numeric(wing_length_mm),
-    flying_time_sec_first_timer = as.numeric(flying_time_sec_first_timer)
-  ) |>
-  rename(flying_time = flying_time_sec_first_timer,
-         width = wing_width_mm,
-         length = wing_length_mm
-         ) |> 
-  tidyr::drop_na()
+if (!dir.exists("data/processed_data")) {
+  dir.create("data/processed_data")
+}
 
-#### Save data ####
-write_csv(cleaned_data, "outputs/data/analysis_data.csv")
+# Load the raw data
+file_path <- "/Users/alexlee/Desktop/raw_shelter_data.csv"
+data <- read_csv(file_path)
+
+# View the first few rows of the dataset to ensure it loaded correctly
+head(data)
+
+# Clean and convert necessary columns, such as dates and calculate new fields
+data_cleaned <- data %>%
+  mutate(OCCUPANCY_DATE = as.Date(OCCUPANCY_DATE, format = "%Y-%m-%d"),
+         UNOCCUPIED_BEDS = CAPACITY_ACTUAL_BED - OCCUPIED_BEDS,
+         OCCUPANCY_RATE_BEDS = OCCUPIED_BEDS / CAPACITY_ACTUAL_BED)
+
+# Check for any NAs or invalid dates
+print(paste("Number of NA values in OCCUPANCY_DATE:", sum(is.na(data_cleaned$OCCUPANCY_DATE))))
+
+# Save the cleaned data for further analysis
+write_csv(data_cleaned, "data/processed_data/cleaned_shelter_data.csv")
+
+# Print success message
+print("Data cleaned and saved successfully.")
